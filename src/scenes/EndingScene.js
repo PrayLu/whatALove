@@ -94,9 +94,11 @@ class EndingScene extends Phaser.Scene {
     const video = document.getElementById('ending-video');
     if (!video || video.dataset.ready) return;
     video.dataset.ready = '1';
-    video.preload = 'auto';
-    video.src = (window.ASSET_BASE || '') + 'assets/happyending.mp4?v=4';
-    video.load();
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.playsInline = true;
+    video.preload = 'metadata';
+    video.src = (window.ASSET_BASE || '') + 'assets/happyending.mp4?v=5';
   }
 
   playHappyVideo() {
@@ -113,13 +115,13 @@ class EndingScene extends Phaser.Scene {
     const playBtn = document.getElementById('ending-video-play');
     if (!wrap || !video) return;
 
-    if (!video.getAttribute('src') && !video.src) {
-      video.src = (window.ASSET_BASE || '') + 'assets/happyending.mp4?v=4';
-    }
-    video.loop = true;
     video.setAttribute('playsinline', 'true');
     video.setAttribute('webkit-playsinline', 'true');
     video.playsInline = true;
+    video.loop = true;
+    if (!video.getAttribute('src')) {
+      video.src = (window.ASSET_BASE || '') + 'assets/happyending.mp4?v=5';
+    }
     wrap.classList.remove('need-tap');
     wrap.classList.add('show');
     document.body.classList.add('ending-video-open');
@@ -133,9 +135,7 @@ class EndingScene extends Phaser.Scene {
       const p = video.play();
       if (p && p.catch) {
         p.catch(() => {
-          video.muted = true;
-          const q = video.play();
-          if (q && q.catch) q.catch(() => wrap.classList.add('need-tap'));
+          wrap.classList.add('need-tap');
         });
       }
     };

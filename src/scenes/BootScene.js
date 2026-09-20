@@ -71,12 +71,12 @@ class BootScene extends Phaser.Scene {
     this.load.image('crystal-shard', 'assets/crystal-shard-use.png');
     this.load.image('crystal-empty', 'assets/crystal-empty-use.png');
     this.load.image('crystal-mystery', 'assets/crystal-mystery-use.png');
+    this.load.audio('bgm', ['backgroundmusic.m4a', 'backgroundmusic.mp3']);
   }
 
   create() {
     this.makeTextures();
     this.createHeroAnims();
-    this.loadBgm();
     ensurePieceDeal(this.registry);
 
     const { width, height } = this.scale;
@@ -144,12 +144,6 @@ class BootScene extends Phaser.Scene {
     ensurePieceDeal(this.registry);
     this.startBgm();
     this.scene.start('Level', { level });
-  }
-
-  loadBgm() {
-    if (this.cache.audio.exists('bgm')) return;
-    this.load.audio('bgm', 'backgroundmusic.mp3');
-    this.load.start();
   }
 
   startBgm() {

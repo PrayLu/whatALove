@@ -16,8 +16,12 @@ const config = {
   input: {
     activePointers: 3,
   },
+  loader: {
+    imageLoadType: 'HTMLImageElement',
+    maxParallelDownloads: 4,
+  },
   audio: {
-    disableWebAudio: false,
+    disableWebAudio: !!window.IS_PHONE,
   },
   scene: [BootScene, LevelScene, RevealScene, TransformScene, EndingScene],
 };

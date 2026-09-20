@@ -2,6 +2,22 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
+  <script>
+    window.ASSET_BASE = (function () {
+      var url = new URL(location.href);
+      var path = url.pathname || '/';
+      if (/\.html?$/i.test(path)) path = path.replace(/[^/]+$/, '');
+      if (path.charAt(path.length - 1) !== '/') path += '/';
+      url.pathname = path;
+      url.search = '';
+      url.hash = '';
+      var href = url.href;
+      var base = document.createElement('base');
+      base.href = href;
+      document.head.insertBefore(base, document.head.firstChild);
+      return href;
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -163,23 +179,12 @@
   <div id="ending-video-wrap">
     <button type="button" id="ending-video-close" aria-label="关闭视频" title="关闭">✕</button>
     <div class="ending-video-frame">
-      <video id="ending-video" playsinline webkit-playsinline loop preload="auto" src="assets/happyending.mp4?v=4"></video>
+      <video id="ending-video" playsinline webkit-playsinline loop preload="none"></video>
       <button type="button" id="ending-video-play">点击播放合影</button>
     </div>
   </div>
 
   <script>
-    /* 手机打开 /whatALove 时常没有末尾 /，相对路径会指到网站根目录 */
-    window.ASSET_BASE = (function () {
-      var url = new URL(location.href);
-      var path = url.pathname || '/';
-      if (/\.html?$/i.test(path)) path = path.replace(/[^/]+$/, '');
-      if (path.charAt(path.length - 1) !== '/') path += '/';
-      url.pathname = path;
-      url.search = '';
-      url.hash = '';
-      return url.href;
-    })();
     /* 触屏输入状态，供游戏场景读取 */
     window.TOUCH = { left: false, right: false, jump: false };
     window.MUSIC_ON = localStorage.getItem('whatalove-music') !== 'off';
@@ -207,7 +212,8 @@
         if (window.ENDING_VIDEO) return;
         g.sound.unlock();
         var bgm = g.sound.get('bgm');
-        if (bgm && !bgm.isPlaying) bgm.play({ loop: true, volume: 0.42 });
+        if (bgm && bgm.isPaused) bgm.resume();
+        else if (bgm && !bgm.isPlaying) bgm.play({ loop: true, volume: 0.42 });
         else if (!bgm && g.cache && g.cache.audio.exists('bgm')) {
           g.sound.play('bgm', { loop: true, volume: 0.42 });
         }
@@ -247,12 +253,6 @@
     document.addEventListener('touchstart', function unlock() {
       var g = window.game;
       if (g && g.sound) g.sound.unlock();
-      var v = document.getElementById('ending-video');
-      if (!v) return;
-      v.playsInline = true;
-      v.muted = true;
-      var p = v.play();
-      if (p && p.then) p.then(function () { v.pause(); v.currentTime = 0; v.muted = false; }).catch(function () {});
     }, { once: true, passive: true });
     window.addEventListener('orientationchange', function () {
       setTimeout(function () { if (window.game && window.game.scale) window.game.scale.refresh(); }, 280);
