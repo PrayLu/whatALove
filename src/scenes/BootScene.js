@@ -11,7 +11,7 @@ class BootScene extends Phaser.Scene {
       fontSize: '16px', color: '#d5efc8',
     }).setOrigin(0.5);
 
-    this.load.setBaseURL(new URL('./', window.location.href).href);
+    this.load.setBaseURL(window.ASSET_BASE || new URL('./', window.location.href).href);
     this.load.maxParallelDownloads = 4;
 
     const paint = (p) => {
@@ -35,42 +35,42 @@ class BootScene extends Phaser.Scene {
     });
     this.load.on('complete', () => { if (hint) hint.remove(); });
 
-    this.load.spritesheet('boy-walk', 'assets/boy-walk-sheet.webp', { frameWidth: 360, frameHeight: 532 });
-    this.load.image('sleep-girl', 'assets/sleep-girl.webp');
-    this.load.image('girl-happy', 'assets/girlhappy.webp');
-    this.load.image('bg-forest', 'assets/bg-forest.webp');
-    this.load.image('bg-level1', 'assets/bg-level1.webp');
-    this.load.image('bg-beach', 'assets/bg-beach.webp');
-    this.load.image('bg-desert', 'assets/bg-desert.webp');
-    this.load.image('bg-snow', 'assets/bg-snow.webp');
-    this.load.image('bg-flowers', 'assets/bg-flowers.webp');
-    this.load.image('bg-town', 'assets/bg-town.webp');
-    this.load.image('bg-aurora', 'assets/bg-aurora.webp');
-    this.load.image('bg-ending', 'assets/bg-ending.webp');
-    this.load.image('tile-moss', 'assets/tile-moss.webp');
-    this.load.image('vine', 'assets/vine.webp');
-    this.load.spritesheet('hero', 'assets/hero-sheet.webp', { frameWidth: 318, frameHeight: 432 });
-    this.load.image('glow-flower', 'assets/glow-flower.webp');
-    this.load.image('portal', 'assets/portal.webp');
-    this.load.image('flower-bed', 'assets/flower-bed.webp');
-    this.load.image('foliage', 'assets/foliage.webp');
-    this.load.image('rabbit', 'assets/rabbit-use.webp');
-    this.load.image('bird', 'assets/bird-use.webp');
-    this.load.image('fruit-berry', 'assets/fruit-berry-use.webp');
-    this.load.image('crab', 'assets/crab-use.webp');
-    this.load.image('seagull', 'assets/seagull-use.webp');
-    this.load.image('shell', 'assets/shell-use.webp');
-    this.load.image('lizard', 'assets/lizard-use.webp');
-    this.load.image('cactus-bloom', 'assets/cactus-bloom-use.webp');
-    this.load.image('snow-hare', 'assets/snow-hare-use.webp');
-    this.load.image('cat', 'assets/cat-use.webp');
-    this.load.image('lantern', 'assets/lantern-use.webp');
-    this.load.image('deer', 'assets/deer-use.webp');
-    this.load.image('ice-bloom', 'assets/ice-bloom-use.webp');
-    this.load.image('wildflower', 'assets/wildflower-use.webp');
-    this.load.image('crystal-shard', 'assets/crystal-shard-use.webp');
-    this.load.image('crystal-empty', 'assets/crystal-empty-use.webp');
-    this.load.image('crystal-mystery', 'assets/crystal-mystery-use.webp');
+    this.load.spritesheet('boy-walk', 'assets/boy-walk-sheet.png', { frameWidth: 360, frameHeight: 532 });
+    this.load.image('sleep-girl', 'assets/sleep-girl.png');
+    this.load.image('girl-happy', 'assets/girlhappy.png');
+    this.load.image('bg-forest', 'assets/bg-forest.jpg');
+    this.load.image('bg-level1', 'assets/bg-level1.jpg');
+    this.load.image('bg-beach', 'assets/bg-beach.jpg');
+    this.load.image('bg-desert', 'assets/bg-desert.jpg');
+    this.load.image('bg-snow', 'assets/bg-snow.jpg');
+    this.load.image('bg-flowers', 'assets/bg-flowers.jpg');
+    this.load.image('bg-town', 'assets/bg-town.jpg');
+    this.load.image('bg-aurora', 'assets/bg-aurora.jpg');
+    this.load.image('bg-ending', 'assets/bg-ending.jpg');
+    this.load.image('tile-moss', 'assets/tile-moss.png');
+    this.load.image('vine', 'assets/vine.png');
+    this.load.spritesheet('hero', 'assets/hero-sheet.png', { frameWidth: 318, frameHeight: 432 });
+    this.load.image('glow-flower', 'assets/glow-flower.png');
+    this.load.image('portal', 'assets/portal.png');
+    this.load.image('flower-bed', 'assets/flower-bed.png');
+    this.load.image('foliage', 'assets/foliage.png');
+    this.load.image('rabbit', 'assets/rabbit-use.png');
+    this.load.image('bird', 'assets/bird-use.png');
+    this.load.image('fruit-berry', 'assets/fruit-berry-use.png');
+    this.load.image('crab', 'assets/crab-use.png');
+    this.load.image('seagull', 'assets/seagull-use.png');
+    this.load.image('shell', 'assets/shell-use.png');
+    this.load.image('lizard', 'assets/lizard-use.png');
+    this.load.image('cactus-bloom', 'assets/cactus-bloom-use.png');
+    this.load.image('snow-hare', 'assets/snow-hare-use.png');
+    this.load.image('cat', 'assets/cat-use.png');
+    this.load.image('lantern', 'assets/lantern-use.png');
+    this.load.image('deer', 'assets/deer-use.png');
+    this.load.image('ice-bloom', 'assets/ice-bloom-use.png');
+    this.load.image('wildflower', 'assets/wildflower-use.png');
+    this.load.image('crystal-shard', 'assets/crystal-shard-use.png');
+    this.load.image('crystal-empty', 'assets/crystal-empty-use.png');
+    this.load.image('crystal-mystery', 'assets/crystal-mystery-use.png');
   }
 
   create() {
