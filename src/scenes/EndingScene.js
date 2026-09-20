@@ -95,7 +95,7 @@ class EndingScene extends Phaser.Scene {
     if (!video || video.dataset.ready) return;
     video.dataset.ready = '1';
     video.preload = 'auto';
-    video.src = 'assets/happyending.mp4?v=2';
+    video.src = new URL('assets/happyending.mp4?v=3', window.location.href).href;
     video.load();
   }
 
@@ -114,7 +114,7 @@ class EndingScene extends Phaser.Scene {
     if (!wrap || !video) return;
 
     if (!video.getAttribute('src') && !video.src) {
-      video.src = 'assets/happyending.mp4?v=2';
+      video.src = new URL('assets/happyending.mp4?v=3', window.location.href).href;
     }
     video.loop = true;
     video.setAttribute('playsinline', 'true');

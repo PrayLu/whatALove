@@ -7,12 +7,31 @@ class BootScene extends Phaser.Scene {
     const hint = document.getElementById('boot-hint');
     const barBg = this.add.rectangle(width / 2, height / 2, 240, 8, 0x1a3d2a);
     const bar = this.add.rectangle(width / 2 - 118, height / 2, 4, 6, 0xe8c97a).setOrigin(0, 0.5);
-    this.add.text(width / 2, height / 2 + 28, '正在前往世界各地…', {
+    const label = this.add.text(width / 2, height / 2 + 28, '正在前往世界各地…', {
       fontSize: '16px', color: '#d5efc8',
     }).setOrigin(0.5);
-    this.load.on('progress', (p) => {
-      bar.width = 4 + 232 * p;
-      if (hint) hint.textContent = '正在前往世界各地… ' + Math.round(p * 100) + '%';
+
+    this.load.setBaseURL(new URL('./', window.location.href).href);
+    this.load.maxParallelDownloads = 4;
+
+    const paint = (p) => {
+      const pct = Math.max(0, Math.min(100, Math.round(p * 100)));
+      bar.width = 4 + 232 * (pct / 100);
+      const text = '正在前往世界各地… ' + pct + '%';
+      label.setText(text);
+      if (hint) hint.textContent = text;
+    };
+    this.load.on('progress', (p) => paint(p));
+    this.load.on('fileprogress', (file, value) => {
+      const done = this.load.totalComplete + (value || 0);
+      const total = this.load.totalToLoad || 1;
+      paint(done / total);
+    });
+    this.load.on('loaderror', (file) => {
+      const name = (file && (file.key || file.src)) || '素材';
+      const text = '素材加载失败：' + name + '，请刷新重试';
+      label.setText(text);
+      if (hint) hint.textContent = text;
     });
     this.load.on('complete', () => { if (hint) hint.remove(); });
 
