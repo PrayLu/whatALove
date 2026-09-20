@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>What A Love</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden; background: #10261c;
+    }
+    #game { width: 100%; height: 100%; }
+    canvas { display: block; margin: 0 auto; }
+    #boot-hint {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      color: #d5efc8; font: 16px/1.6 -apple-system, BlinkMacSystemFont, sans-serif;
+      pointer-events: none;
+    }
+
+    #touch-controls, #rotate-tip, #ending-choice { display: none; }
+    .tbtn {
+      position: fixed; z-index: 10;
+      bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
+      width: 68px; height: 68px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.18); color: #fff;
+      font-size: 30px; line-height: 68px; text-align: center;
+      user-select: none; -webkit-user-select: none;
+      touch-action: none;
+    }
+    .tbtn:active { background: rgba(232, 201, 122, 0.55); }
+    #tleft  { left: max(16px, calc(env(safe-area-inset-left) + 10px)); }
+    #tright { left: calc(max(16px, env(safe-area-inset-left) + 10px) + 84px); }
+    #tjump  { right: max(16px, calc(env(safe-area-inset-right) + 10px)); }
+
+    body.is-phone {
+      position: fixed; inset: 0;
+      height: 100dvh;
+      touch-action: manipulation;
+      overscroll-behavior: none;
+      -webkit-user-select: none; user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body.is-phone #game { height: 100dvh; }
+    body.is-phone canvas { touch-action: none; }
+    body.is-phone.show-touch-pad #touch-controls { display: block; }
+    body.is-phone.ending-video-open #touch-controls { display: none !important; }
+    body.is-phone #rotate-tip {
+      position: fixed; inset: 0; z-index: 40;
+      background: #10261c; color: #f7ead0;
+      font-size: 18px; text-align: center;
+      align-items: center; justify-content: center;
+      padding: 24px;
+      flex-direction: column; gap: 12px;
+    }
+    @media (orientation: portrait) {
+      body.is-phone #rotate-tip { display: flex; }
+      body.is-phone.show-touch-pad #touch-controls { display: none; }
+    }
+
+    #music-toggle {
+      position: fixed;
+      top: max(12px, env(safe-area-inset-top));
+      right: max(12px, env(safe-area-inset-right));
+      z-index: 15;
+      width: 44px; height: 44px; padding: 0; border-radius: 50%;
+      border: 1px solid rgba(232, 201, 122, 0.55);
+      background: rgba(16, 38, 28, 0.72);
+      color: #e8c97a; font-size: 20px; line-height: 42px;
+      text-align: center; cursor: pointer; appearance: none;
+      user-select: none; -webkit-user-select: none;
+    }
+    #music-toggle:hover { background: rgba(26, 61, 42, 0.9); }
+    #music-toggle.off { color: #8aa392; border-color: rgba(138, 163, 146, 0.45); }
+    #music-toggle.off::after {
+      content: '';
+      position: absolute; left: 10px; right: 10px; top: 21px;
+      border-top: 2px solid #c97878; transform: rotate(-32deg);
+    }
+
+    #ending-video-wrap {
+      display: flex; position: fixed; inset: 0; z-index: 30;
+      align-items: center; justify-content: center;
+      background: rgba(8, 18, 14, 0.78);
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      opacity: 0; visibility: hidden; pointer-events: none;
+    }
+    #ending-video-wrap.show {
+      opacity: 1; visibility: visible; pointer-events: auto;
+    }
+    .ending-video-frame {
+      width: min(92vw, 740px);
+      min-height: 180px;
+      max-height: 78dvh;
+      border-radius: 18px; overflow: hidden;
+      background: #10261c;
+      border: 2px solid rgba(232, 201, 122, 0.7);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
+    }
+    #ending-video {
+      display: block; width: 100%; height: auto; max-height: 78dvh;
+      min-height: 180px;
+      background: #10261c; object-fit: contain;
+    }
+    #ending-video-play {
+      display: none; position: absolute; inset: 0;
+      align-items: center; justify-content: center;
+      background: rgba(8, 18, 14, 0.35);
+      color: #ffe08a; font-size: 18px;
+      border: 0; cursor: pointer;
+    }
+    #ending-video-wrap.need-tap #ending-video-play { display: flex; }
+    #ending-video-close {
+      position: absolute;
+      top: max(12px, env(safe-area-inset-top));
+      right: max(12px, env(safe-area-inset-right));
+      z-index: 31;
+      width: 44px; height: 44px; padding: 0; border-radius: 50%;
+      border: 1px solid rgba(232, 201, 122, 0.55);
+      background: rgba(16, 38, 28, 0.82);
+      color: #f7ead0; font-size: 22px; line-height: 42px;
+      text-align: center; cursor: pointer; appearance: none;
+    }
+    #ending-video-close:hover { background: rgba(26, 61, 42, 0.95); color: #e8c97a; }
+
+    #ending-choice {
+      display: none; position: fixed; left: 0; right: 0; z-index: 16;
+      bottom: max(16px, calc(env(safe-area-inset-bottom) + 12px));
+      justify-content: center; gap: 16px; pointer-events: none;
+    }
+    body.is-phone #ending-choice.show { display: flex; pointer-events: auto; }
+    body.ending-video-open #ending-choice { display: none !important; }
+    #ending-choice button {
+      min-width: 132px; height: 46px; padding: 0 22px; border-radius: 23px;
+      border: 1.5px solid #fff4c2; background: #e8c97a; color: #1a3d2a;
+      font-size: 17px; appearance: none;
+    }
+    @media (max-height: 430px) {
+      body.is-phone .tbtn { width: 56px; height: 56px; font-size: 24px; line-height: 56px; }
+      body.is-phone #tright { left: calc(max(16px, env(safe-area-inset-left) + 10px) + 70px); }
+    }
+  </style>
+</head>
+<body>
+  <div id="game"><div id="boot-hint">正在前往世界各地…</div></div>
+
+  <div id="touch-controls">
+    <div class="tbtn" id="tleft">◀</div>
+    <div class="tbtn" id="tright">▶</div>
+    <div class="tbtn" id="tjump">⤒</div>
+  </div>
+  <div id="rotate-tip">请把手机横过来<br><span style="font-size:14px;color:#c9e6c0">一起去散步</span></div>
+  <button type="button" id="music-toggle" aria-label="音乐开关" title="音乐开关">♪</button>
+  <div id="ending-choice">
+    <button type="button" id="ending-yes-go">一起去！</button>
+    <button type="button" id="ending-yes-ok">答应你！</button>
+  </div>
+  <div id="ending-video-wrap">
+    <button type="button" id="ending-video-close" aria-label="关闭视频" title="关闭">✕</button>
+    <div class="ending-video-frame">
+      <video id="ending-video" playsinline webkit-playsinline loop preload="auto" src="assets/happyending.mp4?v=2"></video>
+      <button type="button" id="ending-video-play">点击播放合影</button>
+    </div>
+  </div>
+
+  <script>
+    /* 触屏输入状态，供游戏场景读取 */
+    window.TOUCH = { left: false, right: false, jump: false };
+    window.MUSIC_ON = localStorage.getItem('whatalove-music') !== 'off';
+    (function () {
+      var ua = navigator.userAgent || '';
+      var mobileUA = /iPhone|iPod|Android.+Mobile|Windows Phone/i.test(ua);
+      var iPad = /iPad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1 && window.matchMedia('(pointer: coarse)').matches);
+      var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+      var small = Math.min(screen.width, screen.height) <= 850;
+      window.IS_PHONE = !!(mobileUA || iPad || (coarse && small));
+      document.body.classList.toggle('is-phone', window.IS_PHONE);
+    })();
+    (function () {
+      var btn = document.getElementById('music-toggle');
+      function paint() {
+        btn.classList.toggle('off', !window.MUSIC_ON);
+        btn.setAttribute('aria-pressed', window.MUSIC_ON ? 'true' : 'false');
+        btn.title = window.MUSIC_ON ? '关闭音乐' : '打开音乐';
+      }
+      function apply() {
+        var g = window.game;
+        if (!g || !g.sound) return;
+        g.sound.mute = !window.MUSIC_ON;
+        if (!window.MUSIC_ON) return;
+        if (window.ENDING_VIDEO) return;
+        g.sound.unlock();
+        var bgm = g.sound.get('bgm');
+        if (bgm && !bgm.isPlaying) bgm.play({ loop: true, volume: 0.42 });
+        else if (!bgm && g.cache && g.cache.audio.exists('bgm')) {
+          g.sound.play('bgm', { loop: true, volume: 0.42 });
+        }
+      }
+      window.applyMusicToggle = apply;
+      paint();
+      btn.addEventListener('click', function () {
+        window.MUSIC_ON = !window.MUSIC_ON;
+        localStorage.setItem('whatalove-music', window.MUSIC_ON ? 'on' : 'off');
+        paint();
+        apply();
+      });
+    })();
+    (function () {
+      function bindHold(id, key) {
+        var el = document.getElementById(id);
+        function on(e) { e.preventDefault(); window.TOUCH[key] = true; }
+        function off(e) { e.preventDefault(); window.TOUCH[key] = false; }
+        el.addEventListener('touchstart', on, { passive: false });
+        el.addEventListener('touchend', off, { passive: false });
+        el.addEventListener('touchcancel', off, { passive: false });
+        el.addEventListener('mousedown', on);
+        el.addEventListener('mouseup', off);
+        el.addEventListener('mouseleave', off);
+      }
+      bindHold('tleft', 'left');
+      bindHold('tright', 'right');
+      // 跳跃：点一下记一次，由游戏循环消费
+      var jump = document.getElementById('tjump');
+      jump.addEventListener('touchstart', function (e) { e.preventDefault(); window.TOUCH.jump = true; }, { passive: false });
+      jump.addEventListener('mousedown', function () { window.TOUCH.jump = true; });
+    })();
+    document.addEventListener('gesturestart', function (e) { if (window.IS_PHONE) e.preventDefault(); });
+    document.addEventListener('touchmove', function (e) {
+      if (window.IS_PHONE && e.touches && e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchstart', function unlock() {
+      var g = window.game;
+      if (g && g.sound) g.sound.unlock();
+      var v = document.getElementById('ending-video');
+      if (!v) return;
+      v.playsInline = true;
+      v.muted = true;
+      var p = v.play();
+      if (p && p.then) p.then(function () { v.pause(); v.currentTime = 0; v.muted = false; }).catch(function () {});
+    }, { once: true, passive: true });
+    window.addEventListener('orientationchange', function () {
+      setTimeout(function () { if (window.game && window.game.scale) window.game.scale.refresh(); }, 280);
+    });
+  </script>
+
+  <script src="vendor/phaser.min.js" onerror="document.getElementById('boot-hint').textContent='游戏引擎加载失败，请刷新重试'"></script>
+  <script src="src/data/dialogues.js"></script>
+  <script src="src/data/level1.js"></script>
+  <script src="src/data/levels-world.js"></script>
+  <script src="src/scenes/BootScene.js"></script>
+  <script src="src/scenes/LevelScene.js"></script>
+  <script src="src/scenes/RevealScene.js"></script>
+  <script src="src/scenes/TransformScene.js"></script>
+  <script src="src/scenes/EndingScene.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>

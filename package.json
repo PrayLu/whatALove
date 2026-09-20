@@ -1,0 +1,11 @@
+{
+  "name": "whatalove",
+  "version": "1.0.0",
+  "description": "A platformer where four levels trace out LOVE",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "serve": "npx serve ."
+  },
+  "keywords": ["game", "love", "phaser"],
+  "license": "MIT"
+}
