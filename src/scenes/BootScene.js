@@ -109,7 +109,7 @@ class BootScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     const isTouch = this.sys.game.device.input.touch;
-    this.add.text(width / 2, height / 2 + 70, isTouch ? '◀ ▶ 移动    ⤒ 跳跃' : DIALOGUES.subtitle, {
+    this.add.text(width / 2, height / 2 + 70, isTouch ? '◀ ▶ 移动    ⤒ 跳跃    集齐七个水晶即可解锁' : DIALOGUES.subtitle, {
       fontSize: '16px', color: '#d5efc8',
     }).setOrigin(0.5);
 

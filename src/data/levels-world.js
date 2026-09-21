@@ -43,11 +43,11 @@ const LEVEL3_RABBITS = [
 ];
 
 const LEVEL4_PLATFORMS = ridge([
-  [220, 402], [270, 398], [330, 378], [400, 362],
+  [40, 418], [100, 412], [160, 408], [220, 402], [270, 398], [330, 378], [400, 362],
   [480, 352], [560, 348], [650, 344], [740, 340],
   [840, 342], [940, 346], [1040, 350], [1140, 354],
-  [1240, 362], [1340, 370], [1440, 378], [1520, 386],
-], 78, 28);
+  [1240, 362], [1340, 370], [1440, 378], [1520, 386], [1580, 392],
+], 130, 32);
 const LEVEL4_SPAWN = { x: 250, y: 350 };
 const LEVEL4_PIECE = { x: 820, y: 298 };
 const LEVEL4_DOOR  = { x: 1400, y: 336 };
@@ -64,8 +64,8 @@ const LEVEL4_RABBITS = [
 
 const LEVEL5_PLATFORMS = strip(430, 32);
 const LEVEL5_SPAWN = { x: 150, y: 380 };
-const LEVEL5_PIECE = { x: 820, y: 386 };
-const LEVEL5_DOOR  = { x: 1420, y: 386 };
+const LEVEL5_PIECE = { x: 820, y: 392 };
+const LEVEL5_DOOR  = { x: 1420, y: 430 };
 const LEVEL5_SIZE  = { w: 1600, h: 640 };
 const LEVEL5_FRUITS = [
   { x: 340, y: 368 },
@@ -80,7 +80,7 @@ const LEVEL5_RABBITS = [
 const LEVEL6_PLATFORMS = strip(468, 32);
 const LEVEL6_SPAWN = { x: 150, y: 416 };
 const LEVEL6_PIECE = { x: 820, y: 424 };
-const LEVEL6_DOOR  = { x: 1420, y: 424 };
+const LEVEL6_DOOR  = { x: 1420, y: 468 };
 const LEVEL6_SIZE  = { w: 1600, h: 640 };
 const LEVEL6_FRUITS = [
   { x: 360, y: 430 },
@@ -95,7 +95,7 @@ const LEVEL6_RABBITS = [
 const LEVEL7_PLATFORMS = strip(348, 32);
 const LEVEL7_SPAWN = { x: 160, y: 296 };
 const LEVEL7_PIECE = { x: 820, y: 304 };
-const LEVEL7_DOOR  = { x: 1400, y: 304 };
+const LEVEL7_DOOR  = { x: 1400, y: 348 };
 const LEVEL7_SIZE  = { w: 1600, h: 640 };
 const LEVEL7_FRUITS = [
   { x: 380, y: 310 },

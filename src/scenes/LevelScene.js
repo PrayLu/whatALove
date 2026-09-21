@@ -122,37 +122,39 @@ class LevelScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.overlap(this.player, this.hearts, this.collectHeart, null, this);
 
+    this.gifts = 0;
+    this.heldGift = null;
+    this.saidHint = {};
+    this.wasAir = false;
+    this.lastPetalAt = 0;
+    this.stillMs = 0;
+    this.piecePos = piecePos;
+
     if (piecePos && !this.pieceGot) {
-      const tex = this.isMystery ? 'crystal-mystery' : 'crystal-shard';
-      this.worldPiece = this.physics.add.staticSprite(piecePos.x, piecePos.y, tex);
-      this.worldPiece.setScale(0.07).setDepth(8).refreshBody();
-      if (!this.isMystery) this.worldPiece.setTint(CRYSTAL_TINT[this.pieceKey] || 0xffffff);
-      this.worldPiece.body.setSize(this.worldPiece.displayWidth * 0.55, this.worldPiece.displayHeight * 0.55);
-      this.tweens.add({
-        targets: this.worldPiece, y: piecePos.y - 8, angle: 5,
-        duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.inOut',
-      });
-      if (!this.isMystery) {
-        this.pieceLetter = this.add.text(piecePos.x, piecePos.y, this.pieceKey, {
-          fontSize: '20px', color: '#1a3d2a', fontStyle: 'bold',
-        }).setOrigin(0.5).setDepth(9);
+      const needRitual = (this.level.rabbits || []).length > 0;
+      if (!needRitual) this.spawnWorldPiece();
+      else {
+        this.pieceHint = this.add.circle(piecePos.x, piecePos.y, 18, 0xe8c97a, 0.45).setDepth(14);
         this.tweens.add({
-          targets: this.pieceLetter, y: piecePos.y - 8,
-          duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.inOut',
+          targets: this.pieceHint, alpha: 0.06, scale: 1.6,
+          duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.inOut',
         });
       }
-      this.physics.add.overlap(this.player, this.worldPiece, this.collectPiece, null, this);
     }
 
     if (doorPos) {
-      this.door = this.physics.add.staticSprite(doorPos.x, doorPos.y - 8, 'portal');
-      this.door.setScale(0.09).setAlpha(this.pieceGot ? 1 : 0.35);
+      this.door = this.physics.add.staticSprite(doorPos.x, doorPos.y, 'portal');
+      this.door.setOrigin(0.5, 1).setScale(0.12).setDepth(15)
+        .setAlpha(this.pieceGot ? 1 : 0.88);
       this.door.refreshBody();
-      this.door.body.setSize(this.door.displayWidth * 0.4, this.door.displayHeight * 0.6);
+      this.door.body.setSize(this.door.displayWidth * 0.45, this.door.displayHeight * 0.7);
+      this.door.body.setOffset(this.door.displayWidth * 0.28, this.door.displayHeight * 0.25);
       this.doorActive = !!this.pieceGot;
-      if (this.doorActive) {
-        this.tweens.add({ targets: this.door, scale: this.door.scale * 1.12, duration: 500, yoyo: true, repeat: -1 });
-      }
+      this.tweens.add({
+        targets: this.door,
+        scale: this.door.scale * 1.08,
+        duration: 700, yoyo: true, repeat: -1, ease: 'Sine.inOut',
+      });
       this.physics.add.overlap(this.player, this.door, () => {
         if (this.doorActive) this.finishLevel();
       });
@@ -289,9 +291,9 @@ class LevelScene extends Phaser.Scene {
       this.add.particles(0, 0, 'dot', {
         x: { min: 0, max: worldW }, y: { min: 20, max: 180 },
         lifespan: 3800, speedY: { min: 16, max: 40 }, speedX: { min: -30, max: 20 },
-        scale: { start: 1.8, end: 0.2 }, alpha: { start: 0.85, end: 0 },
+        scale: { start: 1.8, end: 0.2 }, alpha: { start: 0.55, end: 0 },
         tint: [0xffb3c9, 0xffe08a, 0xff8eb0], frequency: 90, blendMode: 'ADD',
-      }).setDepth(16);
+      }).setDepth(3);
       return;
     }
     if (kind === 'aurora') {
@@ -300,7 +302,7 @@ class LevelScene extends Phaser.Scene {
         lifespan: 5000, speedY: { min: -10, max: 8 }, speedX: { min: -16, max: 16 },
         scale: { start: 2.2, end: 0.2 }, alpha: { start: 0.7, end: 0 },
         tint: [0x7eecc0, 0xc9a6ff, 0x7ecbff], frequency: 70, blendMode: 'ADD',
-      }).setDepth(16);
+      }).setDepth(3);
       return;
     }
     if (kind === 'dust') {
@@ -327,7 +329,7 @@ class LevelScene extends Phaser.Scene {
         lifespan: 3800, speed: { min: 4, max: 12 },
         scale: { start: 2.0, end: 0.2 }, alpha: { start: 0.7, end: 0 },
         tint: [0xffe08a, 0xffb56a, 0xfff4c2], frequency: 160, blendMode: 'ADD',
-      }).setDepth(16);
+      }).setDepth(3);
       return;
     }
     this.add.particles(0, 0, 'dot', {
@@ -353,7 +355,10 @@ class LevelScene extends Phaser.Scene {
         targets: r, y: p.y - 4,
         duration: 700 + i * 180, yoyo: true, repeat: -1, ease: 'Sine.inOut',
       });
-      this.rabbits.push({ spr: r, fleeing: false, shy: critter !== 'deer' });
+      this.rabbits.push({
+        spr: r, homeX: p.x, homeY: p.y, kind: critter,
+        friend: false, hopping: false, follow: false,
+      });
     });
 
     (this.level.fruits || []).forEach((p) => {
@@ -361,6 +366,7 @@ class LevelScene extends Phaser.Scene {
       const fruit = this.hearts.create(p.x, p.y, pick);
       const pickScale = { lantern: 0.1, 'cactus-bloom': 0.07, wildflower: 0.14, shell: 0.075, 'ice-bloom': 0.09 };
       fruit.setScale(pickScale[pick] || 0.08).setDepth(8).refreshBody();
+      fruit.glow = glow;
       this.tweens.add({
         targets: [fruit, glow], y: p.y - 6,
         duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.inOut',
@@ -385,27 +391,224 @@ class LevelScene extends Phaser.Scene {
     }
   }
 
-  updateRabbits() {
+  updateCritters() {
     if (!this.rabbits || !this.player) return;
     this.rabbits.forEach((r) => {
-      if (r.fleeing || !r.spr.active) return;
+      if (!r.spr.active) return;
       const dx = this.player.x - r.spr.x;
       const dy = this.player.y - r.spr.y;
-      if (dx * dx + dy * dy > (r.shy === false ? 200 * 200 : 150 * 150)) return;
-      r.fleeing = true;
-      const dir = dx >= 0 ? -1 : 1;
-      r.spr.setFlipX(dir < 0);
-      this.tweens.killTweensOf(r.spr);
-      this.tweens.add({
-        targets: r.spr,
-        x: r.spr.x + dir * 260,
-        y: r.spr.y - 18,
-        alpha: 0,
-        duration: 720,
-        ease: 'Cubic.easeIn',
-        onComplete: () => r.spr.destroy(),
-      });
+      const dist2 = dx * dx + dy * dy;
+
+      if (r.friend && r.follow) {
+        let targetX = this.player.x - (this.player.flipX ? -52 : 52);
+        if (r.kind === 'deer' && this.worldPiece) targetX = this.worldPiece.x - 42;
+        if (r.kind === 'snow-hare' && this.piecePos && !this.worldPiece) targetX = this.piecePos.x - 30;
+        r.spr.x += (targetX - r.spr.x) * 0.07;
+        r.spr.setFlipX(this.player.x < r.spr.x);
+        return;
+      }
+      if (r.friend || r.hopping) return;
+      if (dist2 > 130 * 130) {
+        r.teased = false;
+        return;
+      }
+      if (dist2 > 110 * 110) return;
+
+      if (this.gifts > 0) {
+        this.feedCritter(r);
+      } else if (dist2 < 72 * 72 && !r.teased) {
+        r.teased = true;
+        this.shyHop(r, dx >= 0 ? -1 : 1);
+        this.sayHint(this.beatLine('wait'));
+      }
     });
+  }
+
+  shyHop(r, dir) {
+    r.hopping = true;
+    r.spr.setFlipX(dir < 0);
+    const from = r.spr.x;
+    this.tweens.add({
+      targets: r.spr, x: from + dir * 42,
+      duration: 280, yoyo: true, ease: 'Cubic.easeOut',
+      onComplete: () => { r.hopping = false; },
+    });
+  }
+
+  feedCritter(r) {
+    if (r.friend || this.gifts <= 0) return;
+    this.gifts -= 1;
+    this.refreshHeldGift();
+    r.friend = true;
+    this.burst(r.spr.x, r.spr.y - 20, 0xffe08a);
+    this.sayHint(this.beatLine('feed'));
+
+    const kind = r.kind;
+    if (kind === 'crab') {
+      if (!this.worldPiece && !this.pieceGot) this.crabUnearth(r);
+      else {
+        this.tweens.add({
+          targets: r.spr, x: r.spr.x + 28,
+          duration: 180, yoyo: true, repeat: 3, ease: 'Sine.inOut',
+        });
+      }
+    } else if (kind === 'lizard') {
+      const dir = this.piecePos && this.piecePos.x > r.spr.x ? 1 : -1;
+      this.tweens.add({
+        targets: r.spr, x: r.spr.x + dir * 86,
+        duration: 420, ease: 'Cubic.easeOut',
+        onComplete: () => {
+          if (!this.worldPiece && !this.pieceGot) this.revealCrystal();
+        },
+      });
+    } else if (kind === 'snow-hare') {
+      if (!this.worldPiece && !this.pieceGot) this.crabUnearth(r);
+      else r.follow = true;
+    } else if (kind === 'cat') {
+      if (!this.worldPiece && !this.pieceGot) this.crabUnearth(r);
+      else {
+        this.tweens.add({
+          targets: r.spr, scaleY: r.spr.scaleY * 0.86,
+          duration: 220, yoyo: true, repeat: 2, ease: 'Sine.inOut',
+        });
+        r.follow = true;
+      }
+    } else if (kind === 'deer') {
+      if (!this.worldPiece && !this.pieceGot) this.crabUnearth(r);
+      else {
+        this.tweens.add({
+          targets: r.spr, angle: -14,
+          duration: 280, yoyo: true, ease: 'Sine.easeInOut',
+          onComplete: () => { r.follow = true; },
+        });
+      }
+    } else {
+      r.follow = true;
+    }
+
+    if (this.level.name === 'forest' && !this.fireflyHug) {
+      this.fireflyHug = this.add.particles(0, 0, 'dot', {
+        lifespan: 1400, speed: { min: 8, max: 28 },
+        scale: { start: 1.5, end: 0 }, alpha: { start: 0.95, end: 0 },
+        tint: [0xfff4c2, 0xc8ffd4], frequency: 80, blendMode: 'ADD',
+      }).setDepth(12);
+      this.fireflyHug.startFollow(this.player, 0, -30);
+    }
+    if (this.level.name === 'flowers') this.registry.set('broughtFlower', true);
+
+    if (this.level.name === 'beach' || kind === 'lizard' || kind === 'snow-hare' || kind === 'cat' || kind === 'deer') return;
+    if (!this.worldPiece && !this.pieceGot) this.revealCrystal();
+  }
+
+  crabUnearth(r) {
+    if (this._unearthing || !this.piecePos) return;
+    this._unearthing = true;
+    const destX = this.piecePos.x;
+    const groundY = r.homeY;
+    this.tweens.killTweensOf(r.spr);
+    this.tweens.add({
+      targets: r.spr, x: destX,
+      duration: Math.min(900, 180 + Math.abs(destX - r.spr.x)),
+      ease: 'Sine.inOut',
+      onComplete: () => {
+        this.tweens.add({
+          targets: r.spr, y: groundY + 16,
+          duration: 140, yoyo: true, repeat: 5, ease: 'Sine.inOut',
+          onComplete: () => {
+            r.spr.y = groundY;
+            this.revealCrystal({ fromSand: true, groundY });
+          },
+        });
+      },
+    });
+  }
+
+  beatLine(key) {
+    const beat = (typeof LEVEL_BEATS !== 'undefined' && LEVEL_BEATS[this.level.name]) || {};
+    if (key === 'wait' && this.level.name === 'town' && this.registry.get('broughtFlower')) {
+      return '它闻了闻你身上的花';
+    }
+    return beat[key] || '';
+  }
+
+  sayHint(text) {
+    if (!text || this.saidHint[text]) return;
+    this.saidHint[text] = true;
+    if (this.hintLabel) this.hintLabel.destroy();
+    this.hintLabel = this.add.text(this.player.x, this.player.y - 78, text, {
+      fontSize: '16px', color: '#f7ead0',
+      backgroundColor: '#0c1f18cc', padding: { x: 10, y: 5 },
+    }).setOrigin(0.5).setDepth(30);
+    this.tweens.add({
+      targets: this.hintLabel, y: this.hintLabel.y - 18, alpha: 0,
+      duration: 2200, delay: 700, ease: 'Sine.easeIn',
+      onComplete: () => { this.hintLabel?.destroy(); this.hintLabel = null; },
+    });
+  }
+
+  refreshHeldGift() {
+    const pick = (this.level.theme && this.level.theme.pick) || 'fruit-berry';
+    if (this.gifts <= 0) {
+      if (this.heldGift) this.heldGift.setVisible(false);
+      return;
+    }
+    if (!this.heldGift) {
+      this.heldGift = this.add.image(this.player.x, this.player.y - 40, pick)
+        .setScale(0.045).setDepth(12);
+    }
+    this.heldGift.setTexture(pick).setVisible(true);
+  }
+
+  spawnWorldPiece(opts) {
+    if (this.worldPiece || !this.piecePos || this.pieceGot) return;
+    const { x, y } = this.piecePos;
+    const fromSand = !!(opts && opts.fromSand);
+    const groundY = (opts && opts.groundY) || y + 40;
+    const startY = fromSand ? groundY + 8 : y;
+    const restY = fromSand ? groundY - 46 : y;
+    const tex = this.isMystery ? 'crystal-mystery' : 'crystal-shard';
+    this.worldPiece = this.physics.add.staticSprite(x, startY, tex);
+    this.worldPiece.setScale(fromSand ? 0.03 : 0.02).setDepth(14).setAlpha(fromSand ? 0.2 : 0).refreshBody();
+    if (!this.isMystery) this.worldPiece.setTint(CRYSTAL_TINT[this.pieceKey] || 0xffffff);
+    this.physics.add.overlap(this.player, this.worldPiece, this.collectPiece, null, this);
+    this.tweens.add({
+      targets: this.worldPiece, scale: 0.11, alpha: 1, y: restY,
+      duration: fromSand ? 900 : 700,
+      ease: fromSand ? 'Back.easeOut' : 'Back.easeOut',
+      onComplete: () => {
+        this.worldPiece.refreshBody();
+        this.worldPiece.body.setSize(this.worldPiece.displayWidth * 0.55, this.worldPiece.displayHeight * 0.55);
+        this.tweens.add({
+          targets: this.worldPiece, y: restY - 8, angle: 5,
+          duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.inOut',
+        });
+      },
+    });
+    if (!this.isMystery) {
+      this.pieceLetter = this.add.text(x, startY, this.pieceKey, {
+        fontSize: '20px', color: '#1a3d2a', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(15).setAlpha(0);
+      this.tweens.add({
+        targets: this.pieceLetter, alpha: 1, y: restY,
+        duration: fromSand ? 900 : 700, ease: 'Back.easeOut',
+      });
+    }
+  }
+
+  revealCrystal(opts) {
+    if (this.worldPiece || this.pieceGot) return;
+    if (this.pieceHint) {
+      this.tweens.killTweensOf(this.pieceHint);
+      this.pieceHint.destroy();
+      this.pieceHint = null;
+    }
+    this.sayHint(this.beatLine('done'));
+    this.spawnWorldPiece(opts);
+    const burstY = (opts && opts.fromSand && opts.groundY) ? opts.groundY - 20 : this.piecePos.y;
+    this.burst(this.piecePos.x, burstY, 0xe8c97a);
+    if (this.door) {
+      this.tweens.add({ targets: this.door, alpha: 0.7, duration: 400 });
+    }
   }
 
   addForestWorld(worldW, worldH) {
@@ -479,7 +682,63 @@ class LevelScene extends Phaser.Scene {
     else this.playHero('hero-idle');
 
     if (this.player.y > this.scale.height + 40) this.rescueToBranch();
-    this.updateRabbits();
+    this.updateCritters();
+    this.updateHeldGift();
+    this.updateLandFeel(onGround, vx, now);
+  }
+
+  updateHeldGift() {
+    if (!this.heldGift || !this.heldGift.active) return;
+    this.heldGift.x = this.player.x + (this.player.flipX ? -22 : 22);
+    this.heldGift.y = this.player.y - 40;
+    this.heldGift.setFlipX(this.player.flipX);
+    this.heldGift.setVisible(this.gifts > 0);
+  }
+
+  updateLandFeel(onGround, vx, now) {
+    if (!onGround) {
+      this.wasAir = true;
+      this.stillMs = 0;
+    } else {
+      if (this.wasAir) {
+        this.wasAir = false;
+        this.landPuff();
+      }
+      if (Math.abs(vx) < 20) this.stillMs += this.game.loop.delta;
+      else this.stillMs = 0;
+    }
+    if (this.level.name === 'flowers' && onGround && Math.abs(vx) > 40 && now - this.lastPetalAt > 220) {
+      this.lastPetalAt = now;
+      const petals = this.add.particles(this.player.x, this.player.y - 6, 'dot', {
+        speedX: { min: -40, max: 40 }, speedY: { min: -30, max: -6 },
+        lifespan: 420, quantity: 5,
+        scale: { start: 1.4, end: 0 }, tint: 0xffb3c9, blendMode: 'ADD',
+      });
+      this.time.delayedCall(450, () => petals.destroy());
+    }
+    if (this.level.name === 'aurora' && this.stillMs > 900 && this.rabbits.some((r) => r.friend)) {
+      this.player.setTint(0xc9a6ff);
+    } else if (this.player.isTinted && this.level.name === 'aurora') {
+      this.player.clearTint();
+    }
+  }
+
+  landPuff() {
+    const y = this.player.y + 8;
+    const color = this.level.name === 'beach' ? 0xd8f4ff
+      : this.level.name === 'snow' ? 0xffffff
+      : this.level.name === 'desert' ? 0xffb56a
+      : 0xe8c97a;
+    const emitter = this.add.particles(this.player.x, y, 'dot', {
+      speedX: { min: -70, max: 70 }, speedY: { min: -40, max: -8 },
+      lifespan: 380, quantity: this.level.name === 'beach' ? 14 : 8,
+      scale: { start: 1.4, end: 0 }, tint: color, blendMode: 'ADD',
+    });
+    this.time.delayedCall(420, () => emitter.destroy());
+    if (this.level.name === 'snow') {
+      const mark = this.add.ellipse(this.player.x, y + 6, 22, 8, 0xffffff, 0.22).setDepth(2);
+      this.tweens.add({ targets: mark, alpha: 0, duration: 1800, onComplete: () => mark.destroy() });
+    }
   }
 
   rescueToBranch() {
@@ -502,8 +761,12 @@ class LevelScene extends Phaser.Scene {
   }
 
   collectHeart(player, heart) {
+    if (heart.glow && heart.glow.destroy) heart.glow.destroy();
     heart.destroy();
+    this.gifts += 1;
+    this.refreshHeldGift();
     this.burst(heart.x, heart.y, 0xffe08a);
+    this.sayHint(this.beatLine('pick'));
   }
 
   collectPiece(player, piece) {
@@ -546,7 +809,7 @@ class LevelScene extends Phaser.Scene {
     if (!this.door || this.doorActive) return;
     this.doorActive = true;
     this.door.setAlpha(1);
-    this.tweens.add({ targets: this.door, scale: this.door.scale * 1.12, duration: 500, yoyo: true, repeat: -1 });
+    this.door.setTint(0xfff4c2);
   }
 
   burst(x, y, color) {

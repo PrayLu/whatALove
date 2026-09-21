@@ -7,7 +7,7 @@ const DIALOGUES = {
 
   // 标题
   title: 'What A Love',
-  subtitle: '← → 移动    ↑ / 空格 跳跃    集齐七片水晶拼出 LOVEFEI',
+  subtitle: '← → 移动    ↑ / 空格 跳跃    集齐七个水晶即可解锁',
 
   reveal: 'LOVEFEI',
   revealHint: '还有三片水晶，笼在雾里……',
@@ -23,6 +23,51 @@ const DIALOGUES = {
   no: '再想想',
   yesResult: '那我们从下一站开始吧',
   noResult: '没关系，地图我先收着',
+};
+
+const LEVEL_BEATS = {
+  forest: {
+    pick: '带给它吧',
+    wait: '它好像在等你',
+    feed: '它愿意跟你走走了',
+    done: '叶子后面亮起来了',
+  },
+  beach: {
+    pick: '这片贝壳正好',
+    wait: '螃蟹护着沙子',
+    feed: '它把沙子刨开了',
+    done: '沙里探出一颗光',
+  },
+  desert: {
+    pick: '花好像刚开',
+    wait: '它懒洋洋地晒太阳',
+    feed: '它让开了一点路',
+    done: '热风里出现了光',
+  },
+  snow: {
+    pick: '冰花凉凉的',
+    wait: '雪兔朝那边看',
+    feed: '它蹦着给你带路',
+    done: '雪地里冒出光来',
+  },
+  flowers: {
+    pick: '摘一束带着走',
+    wait: '它藏在花丛里',
+    feed: '花瓣沾在它鼻子上',
+    done: '花心里睡着光',
+  },
+  town: {
+    pick: '灯笼还温着',
+    wait: '猫蹲在灯下面',
+    feed: '它呼噜一声',
+    done: '路灯一盏盏亮了',
+  },
+  aurora: {
+    pick: '像一小片极光',
+    wait: '鹿没有跑',
+    feed: '它低头碰了碰你',
+    done: '光落在水晶上',
+  },
 };
 
 const LOVE_WORD = 'LOVEFEI';

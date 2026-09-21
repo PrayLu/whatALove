@@ -113,33 +113,64 @@ class EndingScene extends Phaser.Scene {
     const video = document.getElementById('ending-video');
     const close = document.getElementById('ending-video-close');
     const playBtn = document.getElementById('ending-video-play');
+    const waitText = document.getElementById('ending-wait-text');
+    const waitFill = document.getElementById('ending-wait-fill');
     if (!wrap || !video) return;
 
     video.setAttribute('playsinline', 'true');
     video.setAttribute('webkit-playsinline', 'true');
     video.playsInline = true;
     video.loop = true;
+    video.preload = 'auto';
     if (!video.getAttribute('src')) {
       video.src = (window.ASSET_BASE || '') + 'assets/happyending.mp4?v=5';
     }
     wrap.classList.remove('need-tap');
-    wrap.classList.add('show');
+    this.clearVideoWait();
+    wrap.classList.add('show', 'loading', 'waiting-unknown');
     document.body.classList.add('ending-video-open');
     document.getElementById('ending-choice')?.classList.remove('show');
-    try { video.currentTime = 0; } catch (e) {}
-    video.muted = false;
+
+    const lines = ['~马上来了~', '再等一小下下♡', '马上就好啦~'];
+    let line = 0;
+    if (waitText) waitText.textContent = lines[0];
+    this._waitTimer = setInterval(() => {
+      line = (line + 1) % lines.length;
+      if (waitText) waitText.textContent = lines[line];
+    }, 1500);
+
+    const paintProgress = () => {
+      const duration = video.duration;
+      if (!duration || !isFinite(duration) || !video.buffered.length) return;
+      const loaded = video.buffered.end(video.buffered.length - 1);
+      const pct = Math.max(8, Math.min(100, Math.round((loaded / duration) * 100)));
+      wrap.classList.remove('waiting-unknown');
+      if (waitFill) waitFill.style.width = pct + '%';
+    };
 
     const start = () => {
-      wrap.classList.remove('need-tap');
+      wrap.classList.remove('need-tap', 'loading', 'waiting-unknown');
       video.muted = false;
       const p = video.play();
       if (p && p.catch) {
         p.catch(() => {
+          wrap.classList.remove('loading');
           wrap.classList.add('need-tap');
         });
       }
     };
-    start();
+
+    this._onVideoProgress = paintProgress;
+    this._onVideoCanPlay = () => {
+      this.clearVideoWait(false);
+      try { video.currentTime = 0; } catch (e) {}
+      start();
+    };
+    video.addEventListener('progress', this._onVideoProgress);
+    video.addEventListener('canplay', this._onVideoCanPlay, { once: true });
+
+    if (video.readyState >= 3) this._onVideoCanPlay();
+    else video.load();
 
     if (playBtn && !playBtn.dataset.bound) {
       playBtn.dataset.bound = '1';
@@ -151,7 +182,30 @@ class EndingScene extends Phaser.Scene {
     }
   }
 
+  clearVideoWait(resetBar = true) {
+    if (this._waitTimer) {
+      clearInterval(this._waitTimer);
+      this._waitTimer = null;
+    }
+    const wrap = document.getElementById('ending-video-wrap');
+    const video = document.getElementById('ending-video');
+    wrap?.classList.remove('loading', 'waiting-unknown');
+    if (video && this._onVideoProgress) {
+      video.removeEventListener('progress', this._onVideoProgress);
+      this._onVideoProgress = null;
+    }
+    if (video && this._onVideoCanPlay) {
+      video.removeEventListener('canplay', this._onVideoCanPlay);
+      this._onVideoCanPlay = null;
+    }
+    if (resetBar) {
+      const fill = document.getElementById('ending-wait-fill');
+      if (fill) fill.style.width = '10%';
+    }
+  }
+
   closeHappyVideo() {
+    this.clearVideoWait();
     const wrap = document.getElementById('ending-video-wrap');
     const video = document.getElementById('ending-video');
     if (video) {
