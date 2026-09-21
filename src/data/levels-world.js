@@ -14,8 +14,8 @@ const LEVEL2_PLATFORMS = [
   { x: 1080, y: 407, w: 1100, h: 30 },
 ];
 const LEVEL2_SPAWN = { x: 150, y: 470 };
-const LEVEL2_PIECE = { x: 820, y: 350 };
-const LEVEL2_DOOR  = { x: 1420, y: 350 };
+const LEVEL2_PIECE = { x: 820, y: 392 };
+const LEVEL2_DOOR  = { x: 1420, y: 392 };
 const LEVEL2_SIZE  = { w: 1600, h: 640 };
 const LEVEL2_FRUITS = [
   { x: 360, y: 470 },
@@ -23,7 +23,7 @@ const LEVEL2_FRUITS = [
   { x: 1180, y: 354 },
 ];
 const LEVEL2_RABBITS = [
-  { x: 520, y: 392 },
+  { x: 640, y: 392 },
   { x: 1080, y: 392 },
 ];
 

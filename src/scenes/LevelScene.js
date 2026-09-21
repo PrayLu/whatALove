@@ -78,6 +78,13 @@ class LevelScene extends Phaser.Scene {
     this.pieceKey = this.registry.get('pieceDeal')[this.levelIndex];
     this.isMystery = (this.registry.get('mysteryLevels') || []).indexOf(this.levelIndex) !== -1;
     this.gotPiece = !!(this.registry.get('pieces') || [])[this.levelIndex];
+    this.worldPiece = null;
+    this.pieceLetter = null;
+    this.pieceHint = null;
+    this._unearthing = false;
+    this.heldGift = null;
+    this.fireflyHug = null;
+    this.door = null;
   }
 
   create() {
@@ -130,20 +137,11 @@ class LevelScene extends Phaser.Scene {
     this.stillMs = 0;
     this.piecePos = piecePos;
 
-    if (piecePos && !this.pieceGot) {
-      const needRitual = (this.level.rabbits || []).length > 0;
-      if (!needRitual) this.spawnWorldPiece();
-      else {
-        this.pieceHint = this.add.circle(piecePos.x, piecePos.y, 18, 0xe8c97a, 0.45).setDepth(14);
-        this.tweens.add({
-          targets: this.pieceHint, alpha: 0.06, scale: 1.6,
-          duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.inOut',
-        });
-      }
-    }
+    if (piecePos && !this.pieceGot) this.spawnWorldPiece();
 
     if (doorPos) {
-      this.door = this.physics.add.staticSprite(doorPos.x, doorPos.y, 'portal');
+      const doorY = this.groundYAt(doorPos.x) ?? doorPos.y;
+      this.door = this.physics.add.staticSprite(doorPos.x, doorY, 'portal');
       this.door.setOrigin(0.5, 1).setScale(0.12).setDepth(15)
         .setAlpha(this.pieceGot ? 1 : 0.88);
       this.door.refreshBody();
@@ -284,7 +282,7 @@ class LevelScene extends Phaser.Scene {
         lifespan: 5000, speedY: { min: 30, max: 70 }, speedX: { min: -20, max: 12 },
         scale: { start: 1.4, end: 0.2 }, alpha: { start: 0.9, end: 0.15 },
         tint: [0xffffff, 0xe8f4ff], frequency: 50, blendMode: 'ADD',
-      }).setDepth(16);
+      }).setDepth(3);
       return;
     }
     if (kind === 'petals') {
@@ -311,7 +309,7 @@ class LevelScene extends Phaser.Scene {
         lifespan: 3600, speedX: { min: 20, max: 50 }, speedY: { min: -8, max: 8 },
         scale: { start: 1.3, end: 0.1 }, alpha: { start: 0.35, end: 0 },
         tint: [0xffb56a, 0xffe08a], frequency: 80, blendMode: 'ADD',
-      }).setDepth(16);
+      }).setDepth(3);
       return;
     }
     if (kind === 'spray') {
@@ -320,7 +318,7 @@ class LevelScene extends Phaser.Scene {
         lifespan: 1600, speedY: { min: -70, max: -20 }, speedX: { min: -12, max: 24 },
         scale: { start: 1.6, end: 0.1 }, alpha: { start: 0.55, end: 0 },
         tint: [0xffffff, 0xd8f4ff], frequency: 40, blendMode: 'ADD',
-      }).setDepth(16);
+      }).setDepth(3);
       return;
     }
     if (kind === 'lamps') {
@@ -445,7 +443,7 @@ class LevelScene extends Phaser.Scene {
 
     const kind = r.kind;
     if (kind === 'crab') {
-      if (!this.worldPiece && !this.pieceGot) this.crabUnearth(r);
+      if (!this.pieceGot) this.crabUnearth(r);
       else {
         this.tweens.add({
           targets: r.spr, x: r.spr.x + 28,
@@ -457,15 +455,13 @@ class LevelScene extends Phaser.Scene {
       this.tweens.add({
         targets: r.spr, x: r.spr.x + dir * 86,
         duration: 420, ease: 'Cubic.easeOut',
-        onComplete: () => {
-          if (!this.worldPiece && !this.pieceGot) this.revealCrystal();
-        },
+        onComplete: () => this.revealCrystal(),
       });
     } else if (kind === 'snow-hare') {
-      if (!this.worldPiece && !this.pieceGot) this.crabUnearth(r);
+      if (!this.pieceGot) this.crabUnearth(r);
       else r.follow = true;
     } else if (kind === 'cat') {
-      if (!this.worldPiece && !this.pieceGot) this.crabUnearth(r);
+      if (!this.pieceGot) this.crabUnearth(r);
       else {
         this.tweens.add({
           targets: r.spr, scaleY: r.spr.scaleY * 0.86,
@@ -474,7 +470,7 @@ class LevelScene extends Phaser.Scene {
         r.follow = true;
       }
     } else if (kind === 'deer') {
-      if (!this.worldPiece && !this.pieceGot) this.crabUnearth(r);
+      if (!this.pieceGot) this.crabUnearth(r);
       else {
         this.tweens.add({
           targets: r.spr, angle: -14,
@@ -497,15 +493,29 @@ class LevelScene extends Phaser.Scene {
     if (this.level.name === 'flowers') this.registry.set('broughtFlower', true);
 
     if (this.level.name === 'beach' || kind === 'lizard' || kind === 'snow-hare' || kind === 'cat' || kind === 'deer') return;
-    if (!this.worldPiece && !this.pieceGot) this.revealCrystal();
+    this.revealCrystal();
   }
 
   crabUnearth(r) {
     if (this._unearthing || !this.piecePos) return;
     this._unearthing = true;
     const destX = this.piecePos.x;
-    const groundY = r.homeY;
+    const groundY = this.groundYAt(destX) ?? r.homeY;
     this.tweens.killTweensOf(r.spr);
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      if (r.spr && r.spr.active) {
+        r.spr.y = r.homeY;
+        this.tweens.add({
+          targets: r.spr, x: destX + 90,
+          duration: 280, ease: 'Sine.easeOut',
+        });
+      }
+      this.revealCrystal({ fromSand: true, groundY });
+    };
+    this.time.delayedCall(1600, finish);
     this.tweens.add({
       targets: r.spr, x: destX,
       duration: Math.min(900, 180 + Math.abs(destX - r.spr.x)),
@@ -513,14 +523,23 @@ class LevelScene extends Phaser.Scene {
       onComplete: () => {
         this.tweens.add({
           targets: r.spr, y: groundY + 16,
-          duration: 140, yoyo: true, repeat: 5, ease: 'Sine.inOut',
-          onComplete: () => {
-            r.spr.y = groundY;
-            this.revealCrystal({ fromSand: true, groundY });
-          },
+          duration: 140, yoyo: true, repeat: 3, ease: 'Sine.inOut',
+          onComplete: finish,
         });
       },
     });
+  }
+
+  groundYAt(x) {
+    const plats = this.level.platforms || [];
+    let top = null;
+    plats.forEach((p) => {
+      if (Math.abs(p.x - x) <= p.w / 2 + 12) {
+        const t = p.y - p.h / 2;
+        if (top == null || t < top) top = t;
+      }
+    });
+    return top;
   }
 
   beatLine(key) {
@@ -559,52 +578,50 @@ class LevelScene extends Phaser.Scene {
     this.heldGift.setTexture(pick).setVisible(true);
   }
 
-  spawnWorldPiece(opts) {
-    if (this.worldPiece || !this.piecePos || this.pieceGot) return;
-    const { x, y } = this.piecePos;
-    const fromSand = !!(opts && opts.fromSand);
-    const groundY = (opts && opts.groundY) || y + 40;
-    const startY = fromSand ? groundY + 8 : y;
-    const restY = fromSand ? groundY - 46 : y;
+  spawnWorldPiece() {
+    if ((this.worldPiece && this.worldPiece.active) || !this.piecePos || this.pieceGot) return;
+    const x = this.piecePos.x;
+    const groundY = this.groundYAt(x) ?? this.piecePos.y;
+    this.piecePos = { x, y: groundY };
     const tex = this.isMystery ? 'crystal-mystery' : 'crystal-shard';
-    this.worldPiece = this.physics.add.staticSprite(x, startY, tex);
-    this.worldPiece.setScale(fromSand ? 0.03 : 0.02).setDepth(14).setAlpha(fromSand ? 0.2 : 0).refreshBody();
+    this.worldPiece = this.physics.add.staticSprite(x, groundY, tex);
+    this.worldPiece.setOrigin(0.5, 1).setScale(0.11).setDepth(16).setAlpha(1);
+    this.worldPiece.refreshBody();
+    this.worldPiece.body.setSize(this.worldPiece.displayWidth * 0.7, this.worldPiece.displayHeight * 0.7);
+    this.worldPiece.body.setOffset(this.worldPiece.displayWidth * 0.15, this.worldPiece.displayHeight * 0.25);
     if (!this.isMystery) this.worldPiece.setTint(CRYSTAL_TINT[this.pieceKey] || 0xffffff);
     this.physics.add.overlap(this.player, this.worldPiece, this.collectPiece, null, this);
     this.tweens.add({
-      targets: this.worldPiece, scale: 0.11, alpha: 1, y: restY,
-      duration: fromSand ? 900 : 700,
-      ease: fromSand ? 'Back.easeOut' : 'Back.easeOut',
-      onComplete: () => {
-        this.worldPiece.refreshBody();
-        this.worldPiece.body.setSize(this.worldPiece.displayWidth * 0.55, this.worldPiece.displayHeight * 0.55);
-        this.tweens.add({
-          targets: this.worldPiece, y: restY - 8, angle: 5,
-          duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.inOut',
-        });
-      },
+      targets: this.worldPiece, y: groundY - 10, angle: 6,
+      duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.inOut',
     });
     if (!this.isMystery) {
-      this.pieceLetter = this.add.text(x, startY, this.pieceKey, {
+      this.pieceLetter = this.add.text(x, groundY - 36, this.pieceKey, {
         fontSize: '20px', color: '#1a3d2a', fontStyle: 'bold',
-      }).setOrigin(0.5).setDepth(15).setAlpha(0);
+      }).setOrigin(0.5).setDepth(17);
       this.tweens.add({
-        targets: this.pieceLetter, alpha: 1, y: restY,
-        duration: fromSand ? 900 : 700, ease: 'Back.easeOut',
+        targets: this.pieceLetter, y: groundY - 46,
+        duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.inOut',
       });
     }
   }
 
-  revealCrystal(opts) {
-    if (this.worldPiece || this.pieceGot) return;
+  revealCrystal() {
+    if (this.pieceGot) return;
     if (this.pieceHint) {
       this.tweens.killTweensOf(this.pieceHint);
       this.pieceHint.destroy();
       this.pieceHint = null;
     }
     this.sayHint(this.beatLine('done'));
-    this.spawnWorldPiece(opts);
-    const burstY = (opts && opts.fromSand && opts.groundY) ? opts.groundY - 20 : this.piecePos.y;
+    if (!this.worldPiece) this.spawnWorldPiece();
+    else {
+      this.tweens.add({
+        targets: this.worldPiece, scale: 0.14,
+        duration: 180, yoyo: true, ease: 'Back.easeOut',
+      });
+    }
+    const burstY = this.worldPiece ? this.worldPiece.y - 24 : this.piecePos.y;
     this.burst(this.piecePos.x, burstY, 0xe8c97a);
     if (this.door) {
       this.tweens.add({ targets: this.door, alpha: 0.7, duration: 400 });
